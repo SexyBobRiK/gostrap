@@ -1,4 +1,4 @@
-
+![Logo](./assets/gostrap.png)
 # Gostrap 🚀
 
 **Gostrap** is a lightweight, configuration-driven Go framework designed to eliminate boilerplate code when initializing microservices. It handles the heavy lifting of setting up HTTP servers, database connections, and cache providers through a single JSON configuration.
