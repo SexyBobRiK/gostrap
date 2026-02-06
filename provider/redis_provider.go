@@ -1,7 +1,7 @@
 package provider
 
 import (
-	"gostrap/config"
+	"github.com/SexyBobRiK/gostrap/config"
 	"log"
 	"sync"
 

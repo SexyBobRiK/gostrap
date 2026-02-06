@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gostrap/config"
-	"gostrap/provider"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/SexyBobRiK/gostrap/config"
+	"github.com/SexyBobRiK/gostrap/provider"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -46,11 +47,11 @@ func LetsGo(filePath string) (*Bootstrap, error) {
 func (boot *Bootstrap) Pulse() error {
 	if boot.Gin != nil {
 		srv := &http.Server{
-			Addr:    fmt.Sprintf(":%d", boot.Config.Gin.Port),
+			Addr:    fmt.Sprintf(":%s", boot.Config.Gin.Port),
 			Handler: boot.Gin,
 		}
 		go func() {
-			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Fatalf("[Gostrap] listen: %s\n", err)
 			}
 		}()
@@ -86,7 +87,7 @@ func (boot *Bootstrap) ShutDown(ctx context.Context) {
 	}
 	if boot.Redis != nil {
 		for name, redisClient := range boot.Redis {
-			log.Printf("[Gostrap] Closing redis: %s", name)
+			log.Printf("[Gostrap] Closing redis: %d", name)
 			if err := redisClient.Close(); err != nil {
 				log.Printf("[Gostrap] Error closing redis: %v", err)
 			}

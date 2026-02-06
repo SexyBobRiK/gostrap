@@ -1,6 +1,6 @@
 package provider
 
-import "gostrap/config"
+import "github.com/SexyBobRiK/gostrap/config"
 
 type ProviderInitiator[T any, R any] interface {
 	ProviderInit(cfg T) (R, error)

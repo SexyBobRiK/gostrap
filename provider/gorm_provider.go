@@ -2,7 +2,7 @@ package provider
 
 import (
 	"fmt"
-	"gostrap/config"
+	"github.com/SexyBobRiK/gostrap/config"
 	"log"
 	"strings"
 	"sync"
