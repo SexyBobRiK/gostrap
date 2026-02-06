@@ -26,12 +26,12 @@ func (GinProvider) ProviderInit(cfgGin config.GinEntity) (*gin.Engine, error) {
 					AllowHeaders:     cfgGin.Middleware.Cors.AllowHeaders,
 					ExposeHeaders:    cfgGin.Middleware.Cors.ExposeHeaders,
 				}))
-				if cfgGin.Middleware.StaticFile != nil && cfgGin.Middleware.StaticFile.Enable {
-					ginEngine.Static(cfgGin.Middleware.StaticFile.UrlOne, cfgGin.Middleware.StaticFile.UrlTwo)
-					ginEngine.MaxMultipartMemory = cfgGin.Middleware.StaticFile.MaxMultipartMemory
-				}
 			} else {
 				ginEngine.Use(cors.Default())
+			}
+			if cfgGin.Middleware.StaticFile != nil && cfgGin.Middleware.StaticFile.Enable {
+				ginEngine.Static(cfgGin.Middleware.StaticFile.UrlOne, cfgGin.Middleware.StaticFile.UrlTwo)
+				ginEngine.MaxMultipartMemory = cfgGin.Middleware.StaticFile.MaxMultipartMemory
 			}
 		}
 		return ginEngine, nil
