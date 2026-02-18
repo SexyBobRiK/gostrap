@@ -2,7 +2,7 @@ package provider
 
 import "github.com/SexyBobRiK/gostrap/config"
 
-type ProviderInitiator[T any, R any] interface {
+type InitiatorProvider[T any, R any] interface {
 	ProviderInit(cfg T) (R, error)
 }
 type ProviderS struct {
@@ -12,10 +12,10 @@ type ProviderS struct {
 
 var ProvidersPipeline = []ProviderS{
 	{
-		Name: "gorm",
+		Name: "database",
 		Init: func(cfg *config.Config) (any, error) {
 			p := GormProvider{}
-			return p.ProviderInit(cfg.Gorm)
+			return p.ProviderInit(cfg.Database)
 		},
 	},
 	{

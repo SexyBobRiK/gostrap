@@ -1,9 +1,10 @@
 package provider
 
 import (
-	"github.com/SexyBobRiK/gostrap/config"
 	"log"
 	"sync"
+
+	"github.com/SexyBobRiK/gostrap/config"
 
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/errgroup"
@@ -11,9 +12,9 @@ import (
 
 type RedisProvider struct{}
 
-func (RedisProvider) ProviderInit(entities []config.RedisEntity) (map[int]*redis.Client, error) {
+func (RedisProvider) ProviderInit(entities []config.RedisEntity) (map[int]redis.Client, error) {
 	var (
-		dbMap = make(map[int]*redis.Client)
+		dbMap = make(map[int]redis.Client)
 		mu    sync.Mutex
 		eg    errgroup.Group
 	)
@@ -29,7 +30,7 @@ func (RedisProvider) ProviderInit(entities []config.RedisEntity) (map[int]*redis
 				Protocol: entity.Protocol,
 			})
 			mu.Lock()
-			dbMap[entity.DB] = rdb
+			dbMap[entity.DB] = *rdb
 			mu.Unlock()
 			log.Printf("[Gostrap] Redis %s connected", entity.DB)
 			return nil

@@ -2,10 +2,11 @@ package provider
 
 import (
 	"fmt"
-	"github.com/SexyBobRiK/gostrap/config"
 	"log"
 	"strings"
 	"sync"
+
+	"github.com/SexyBobRiK/gostrap/config"
 
 	"golang.org/x/sync/errgroup"
 	"gorm.io/driver/postgres"
@@ -14,35 +15,43 @@ import (
 
 type GormProvider struct{}
 
-func (GormProvider) ProviderInit(entities []config.GormEntity) (map[string]*gorm.DB, error) {
+func (GormProvider) ProviderInit(entities []config.DatabaseEntity) (map[string]gorm.DB, error) {
 	var (
-		dbMap = make(map[string]*gorm.DB)
-		mu    sync.Mutex
-		eg    errgroup.Group
+		dbMap               = make(map[string]gorm.DB)
+		mu                  sync.Mutex
+		eg                  errgroup.Group
+		defaultDatabaseName = "postgres"
 	)
 
 	for _, entity := range entities {
 		if !entity.Enable {
 			continue
 		}
-		for _, dbCfg := range entity.Database {
+		for i, _ := range entity.Database {
+			if !entity.Database[i].Enable {
+				continue
+			}
+			database := entity.Database[i]
 			eg.Go(func() error {
+				if database.Database == nil || *database.Database == "" {
+					database.Database = &defaultDatabaseName
+				}
 				dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s %s",
-					dbCfg.Host,
-					dbCfg.Username,
-					dbCfg.Password,
-					dbCfg.Database,
-					dbCfg.Port,
-					strings.Join(dbCfg.Param, " "),
+					database.Host,
+					database.Username,
+					database.Password,
+					database.Database,
+					database.Port,
+					strings.Join(database.Param, " "),
 				)
 				db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 				if err != nil {
-					return fmt.Errorf("[Gostrap] Database %s connect error: %w", dbCfg.Database, err)
+					return fmt.Errorf("[Gostrap] Database %s connect error: %w", database.Database, err)
 				}
 				mu.Lock()
-				dbMap[dbCfg.Database] = db
+				dbMap[*database.Database] = *db
 				mu.Unlock()
-				log.Printf("[Gostrap] Database %s connected", dbCfg.Database)
+				log.Printf("[Gostrap] Database %s connected", database.Database)
 				return nil
 			})
 		}

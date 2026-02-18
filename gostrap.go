@@ -2,33 +2,34 @@ package gostrap
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/SexyBobRiK/gostrap/config"
 	"github.com/SexyBobRiK/gostrap/provider"
-
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
-var (
+const (
 	configName = "gostrap"
 )
 
 type Bootstrap struct {
+	Logger     *slog.Logger
 	Config     *config.Config
 	Gin        *gin.Engine
-	Database   map[string]*gorm.DB
-	Redis      map[int]*redis.Client
+	Database   map[string]gorm.DB
+	Redis      map[int]redis.Client
 	HttpServer *http.Server
 }
 
@@ -44,6 +45,15 @@ func LetsGo(filePath string) (*Bootstrap, error) {
 	return startApplicationProcess(cfg)
 }
 
+func (b *Bootstrap) initLogger() {
+	var handler slog.Handler
+	if strings.ToLower(b.Config.Gin.Mode) == gin.DebugMode || strings.ToLower(b.Config.Gin.Mode) == gin.TestMode {
+		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+	} else {
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
+	}
+	b.Logger = slog.New(handler)
+}
 func (boot *Bootstrap) Pulse() error {
 	if boot.Gin != nil {
 		srv := &http.Server{
@@ -110,32 +120,38 @@ func startApplicationProcess(cfg *config.Config) (*Bootstrap, error) {
 			mapResultProviderToBootstrap(bootstrap, result)
 		}
 	}
+	bootstrap.initLogger()
 	return bootstrap, nil
 }
 func openConfigFile(path string) (*config.Config, error) {
 	var (
 		file []byte
 		err  error
-		cfg  *config.Config
+		cfg  = new(config.Config)
 	)
 	if file, err = os.ReadFile(path); err != nil {
-		return cfg, err
+		return nil, err
 	}
-	if err = json.Unmarshal(file, &cfg); err != nil {
-		return cfg, err
+	loader, err := config.Decoder(path)
+	if err != nil {
+		return nil, err
 	}
-	if cfg.ConfigName == configName {
-		return cfg, nil
+	err = loader.LoadConfig(file, cfg)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("[Gostrap] config name not match")
+	if cfg.ConfigName != configName {
+		return nil, errors.New("[Gostrap] config name not match")
+	}
+	return cfg, nil
 }
 func mapResultProviderToBootstrap(b *Bootstrap, res any) {
 	switch v := res.(type) {
 	case *gin.Engine:
 		b.Gin = v
-	case map[string]*gorm.DB:
+	case map[string]gorm.DB:
 		b.Database = v
-	case map[int]*redis.Client:
+	case map[int]redis.Client:
 		b.Redis = v
 	}
 }
